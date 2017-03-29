@@ -2,8 +2,8 @@
 #include <avr/interrupt.h>
 
 // light parameters
-byte low  = 2;
-byte high = 2047;
+unsigned long low  = 2;
+unsigned long high = 2047;
 
 // pwm controls
 #define PWM_rollover  2047
