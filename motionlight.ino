@@ -44,7 +44,7 @@ void loop()
   static unsigned long old_seconds = cur_seconds;
   boolean motion = (PINB & MOTION_PIN);
   static int lightValue = analogRead(0);
-  int new_dc;
+  unsigned long new_dc;
 
   if ( cur_seconds - old_seconds > 5 )
   {
