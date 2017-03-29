@@ -145,7 +145,7 @@ void PWM_shutdown()
 ISR(TIMER0_COMPA_vect)
 {
   static unsigned int cur_tick = 0;
-  if( cur_tick >= PWM_rollover ) 
+  if( cur_tick > PWM_rollover ) 
     cur_tick = 0;
 
   if( cur_tick == 0 && PWM_dc > 0 )
