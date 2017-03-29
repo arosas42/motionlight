@@ -1,3 +1,11 @@
+/* Name: motionlight.ino
+ * Type: Arduino sketch
+ * Author: Arturo Rosas (arturo@mst.edu)
+ * Description: Written for an ATtiny85, PWM with resolution 8 times greater than analogWrite
+ *              switches a mosfet driven LED to transition from values "low" to "high"
+ *              over a long period of time (~90 seconds) in the presence of motion (tripped by a passive infra-red sensor)
+ */
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -6,8 +14,8 @@ unsigned long low  = 2;
 unsigned long high = 2047;
 
 // pwm controls
-#define PWM_rollover  2047
-#define PWM_delay     127
+#define PWM_rollover  2047 // PWM resolution roughly 8 times higher than that of analogWrite
+#define PWM_delay     127  // PWM interrupt called at roughly 15 KHz with clk/8 prescaler
 unsigned int PWM_dc = low;  
 
 // pin definitions
@@ -46,6 +54,7 @@ void loop()
   static int lightValue = analogRead(0);
   unsigned long new_dc;
 
+  // check LDR once every 5 seconds
   if ( cur_seconds - old_seconds > 5 )
   {
     lightValue = analogRead(0);
@@ -55,13 +64,12 @@ void loop()
   if (motion)
     then = cur_seconds;
   
+  // run the state machine
   switch(cur_state)
   {
     case STATE_LOW:
       if ( lightValue >= DAYLIGHT )
-      {
         cur_state = STATE_DAYLIGHT;
-      }
       else if (motion)
       {
         start = cur_millis;
@@ -69,6 +77,10 @@ void loop()
       }
       break;
       
+    // leverage logic in STATE_HIGH for daylight
+    // and motion timeouts
+    // use millis_to_dc to determine new duty cycle
+    // while *transit*ioning from STATE_LOW to STATE_HIGH
     case STATE_TRANSIT:
       new_dc = millis_to_dc( cur_millis - start );
       if ( new_dc >= high )
@@ -78,9 +90,7 @@ void loop()
 
     case STATE_HIGH:
       if ( lightValue >= DAYLIGHT )
-      {
         cur_state = STATE_DAYLIGHT;
-      }
       else if ( (cur_seconds - then) > interval )
       {
         cur_state = STATE_LOW;
@@ -102,13 +112,17 @@ void loop()
       }
       break;
   }
-  
+
+  // delay 20 ms so that we can update
+  // pwm duty cycle values at roughly 50Hz  
   delay(20);
 }
 
 unsigned long millis_to_dc( unsigned long mils )
 {
   float seconds = mils / 1000.0;
+  // hard-coded values to fit a rough third-order polynomial
+  // may re-work this at some point
   return long(0.00035 * seconds * seconds * seconds) + low;  
 }
 
